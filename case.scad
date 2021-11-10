@@ -21,7 +21,7 @@ include <../Round-Anything/polyround.scad>
 show_camera = 0;
 parts = 0;
 
-w_wall = 2;
+wall_thickness = 2;
 
 xw_case = 100; // width viewed from front, assuming front is where camera lense is
 yh_case = 90; // height viewed from front
@@ -40,6 +40,14 @@ cutout_offset = 20;
 cutout_width = 32;
 
 pir_radius = 23.0 / 2.0;
+pir_base_y = 10;
+pir_mount_offset = -0.5;
+pir_mount_w = 35;
+pir_mount_ridge = 4.5;
+pir_mount_ridge_wide = 6;
+pir_mount_ridge_high = 3.3;
+pir_mount_h = 2;
+pir_mount_d = 4;
 
 //x=1; // Wall thickness 
 //difference(){ 
@@ -47,9 +55,59 @@ pir_radius = 23.0 / 2.0;
 //cube([50-x,50-x,101], center=true); 
 //}
 
+module bbox() { 
+  // https://en.wikibooks.org/wiki/OpenSCAD_User_Manual/Tips_and_Tricks#Computing_a_bounding_box
+    // a 3D approx. of the children projection on X axis 
+    module xProjection() 
+        translate([0,1/2,-1/2]) 
+            linear_extrude(1) 
+                hull() 
+                    projection() 
+                        rotate([90,0,0]) 
+                            linear_extrude(1) 
+                                projection() children(); 
+  
+    // a bounding box with an offset of 1 in all axis
+    module bbx()  
+        minkowski() { 
+            xProjection() children(); // x axis
+            rotate(-90)               // y axis
+                xProjection() rotate(90) children(); 
+            rotate([0,-90,0])         // z axis
+                xProjection() rotate([0,90,0]) children(); 
+        } 
+    
+    // offset children() (a cube) by -1 in all axis
+    module shrink()
+      intersection() {
+        translate([ 1, 1, 1]) children();
+        translate([-1,-1,-1]) children();
+      }
+
+   shrink() bbx() children(); 
+}
+
 module cam_at_position() {
-translate([xw_case / 2.0, yh_case / 2.0 + cam_y_offset, zd_case + cam_z_offset])
-object1();
+translate([xw_case / 2.0, yh_case / 2.0 + cam_y_offset, zd_case + cam_z_offset]) {
+  object1();
+}
+}
+
+module cam_at_position2() {
+translate([xw_case / 2.0, yh_case / 2.0 + cam_y_offset, zd_case + cam_z_offset]) {
+  cylinder(15.6, 7.65,7.65);
+  translate([-30.5,0,-5])
+  cylinder(15.6, 9.49, 9.49);
+  translate([30.5,0,-5])
+  cylinder(15.6, 9.49, 9.49);
+  
+  translate([-19.5,6.9,-5])
+  cylinder(11.2, 3,3,$fn=20);
+
+  translate([19.5,-6.9,-5])
+  cylinder(11.2, 3,3,$fn=20);
+
+}
 }
 
 // Points: x,y,bend amount?
@@ -71,12 +129,12 @@ module enclosure_core() {
   union() {
     difference() {
       SmoothXYCube([xw_case, yh_case, zd_case], r_case);
-      translate([w_wall,w_wall,-1])
-      SmoothXYCube([xw_case - 2 * w_wall, yh_case - 2 * w_wall, zd_case + 2], r_case);
+      translate([wall_thickness,wall_thickness,-1])
+      SmoothXYCube([xw_case - 2 * wall_thickness, yh_case - 2 * wall_thickness, zd_case + 2], r_case);
       
       // cut out for USB cabling
-      translate([cutout_offset, -0.01 + yh_case - w_wall, -0.20 + 3])
-      cube([cutout_width, w_wall+0.2, 5 + 0.2 + 3]);
+      translate([cutout_offset, -0.01 + yh_case - wall_thickness, -0.20 + 3])
+      cube([cutout_width, wall_thickness+0.2, 5 + 0.2 + 3]);
     }
 
     translate([0, 0, 0])
@@ -95,7 +153,7 @@ module enclosure() {
   // struts
   translate([pi_cam_strut_offset, 0, -cam_pcb_offset])
   cube([4, yh_case, zd_case + cam_pcb_offset - pi_cam_offset]);
-  translate([xw_case - pi_cam_strut_offset - w_wall*2, 0, -cam_pcb_offset])
+  translate([xw_case - pi_cam_strut_offset - wall_thickness*2, 0, -cam_pcb_offset])
   cube([4, yh_case, zd_case + cam_pcb_offset - pi_cam_offset]);
 }
 
@@ -104,13 +162,24 @@ module front_lid() {
 union() {
 difference() {
 translate([0,0,zd_case])
-SmoothXYCube([xw_case, yh_case, w_wall], r_case);
-cam_at_position();
-translate([xw_case / 2 - 1, pir_radius + 10 ,zd_case - 0.1])
-cylinder(w_wall + 0.2, pir_radius, pir_radius);
+SmoothXYCube([xw_case, yh_case, wall_thickness], r_case);
+cam_at_position2();
 
 // hole for PIR sensor
+translate([xw_case / 2 - 1, pir_radius + pir_base_y ,zd_case - 0.1])
+cylinder(wall_thickness + 0.2, pir_radius, pir_radius);
 }
+// mounts on back
+pir_xx = (xw_case - pir_mount_w - wall_thickness) / 2;
+translate([pir_xx, pir_base_y - pir_mount_h + pir_mount_offset, zd_case - pir_mount_d])
+cube([pir_mount_w, pir_mount_h, pir_mount_d]);
+
+translate([pir_xx, pir_base_y + pir_mount_offset, zd_case - pir_mount_ridge_high])
+cube([pir_mount_ridge_wide, pir_radius * 2 - pir_mount_offset, pir_mount_ridge_high]);
+translate([pir_xx + pir_mount_w - pir_mount_ridge_wide, pir_base_y + pir_mount_offset, zd_case - pir_mount_ridge_high])
+cube([pir_mount_ridge_wide, pir_radius * 2 - pir_mount_offset, pir_mount_ridge_high]);
+
+
 // sun lense on front
 translate([0,yh_case - visor_h,zd_case])
 linear_extrude(height=18)
@@ -122,10 +191,13 @@ visor();
 }
 
 //show_camera = 1;
-parts = 1;
+parts = 0;
+
+//%bbox() cam_at_position();
 
 if (show_camera == 1) {
-  color(color_aluminum) cam_at_position();
+  //color([.7,.7,.7,0.79]) cam_at_position();
+  color([.9,0,0,0.79]) cam_at_position2();
 }
 
 if (parts == 0 || parts == 1) {
