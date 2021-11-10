@@ -95,18 +95,20 @@ translate([xw_case / 2.0, yh_case / 2.0 + cam_y_offset, zd_case + cam_z_offset])
 
 module cam_at_position2() {
 translate([xw_case / 2.0, yh_case / 2.0 + cam_y_offset, zd_case + cam_z_offset]) {
-  cylinder(15.6, 7.65,7.65);
+  cylinder(15.6, 7.56,7.56);
+
+  translate([5,0,0]) {  
   translate([-30.5,0,-5])
   cylinder(15.6, 9.49, 9.49);
+  translate([-19.5,6.9,-5])
+  cylinder(11.2, 3.2,3.2,$fn=20);
+  }
+  translate([-5,0,0]) {  
   translate([30.5,0,-5])
   cylinder(15.6, 9.49, 9.49);
-  
-  translate([-19.5,6.9,-5])
-  cylinder(11.2, 3,3,$fn=20);
-
   translate([19.5,-6.9,-5])
-  cylinder(11.2, 3,3,$fn=20);
-
+  cylinder(11.2, 3.2,3.2,$fn=20);
+  }
 }
 }
 
@@ -178,6 +180,16 @@ translate([pir_xx, pir_base_y + pir_mount_offset, zd_case - pir_mount_ridge_high
 cube([pir_mount_ridge_wide, pir_radius * 2 - pir_mount_offset, pir_mount_ridge_high]);
 translate([pir_xx + pir_mount_w - pir_mount_ridge_wide, pir_base_y + pir_mount_offset, zd_case - pir_mount_ridge_high])
 cube([pir_mount_ridge_wide, pir_radius * 2 - pir_mount_offset, pir_mount_ridge_high]);
+
+hot_mount_w = 6;
+hot_hh = 4;
+hot_yy = 10;
+hot_xx = xw_case / 2;
+translate([hot_xx + 8, yh_case - hot_yy - 8, zd_case - hot_hh])
+cube([hot_mount_w, hot_yy, hot_hh]);
+
+translate([hot_xx - 8 - hot_mount_w, yh_case - hot_yy - 14, zd_case - hot_hh])
+cube([hot_mount_w, hot_yy, hot_hh]);
 
 
 // sun lense on front
