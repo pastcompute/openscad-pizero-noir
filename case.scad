@@ -13,6 +13,7 @@ include <MCAD/units.scad>
 // openscad -Dshow_camera=0 -Dparts=1 -o part1-lid.stl case.scad
 // openscad -Dshow_camera=0 -Dparts=2 -o part2-enc.stl case.scad
 
+include <../BOSL/shapes.scad>
 include <../Round-Anything/polyround.scad>
 include <../openscad-openbuilds/utils/colors.scad>
 include <../smooth-prim/smooth_prim.scad>
@@ -24,14 +25,14 @@ parts = 0;
 wall_thickness = 2;
 
 xw_case = 100; // width viewed from front, assuming front is where camera lense is
-yh_case = 70;  // height viewed from front
+yh_case = 80;  // height viewed from front
 zd_case = 38;
 r_case = 6;
 visor_rw = 6;
 visor_h = 10;
 sr = 6; // radii of screw columns in corners
 
-cam_y_offset_from_top = -18; // 0 means middle of lens would cut top of enclosure...
+cam_y_offset_from_top = -24; // 0 means middle of lens would cut top of enclosure...
 // -16 lines up as original, with original back ridges
 cam_z_offset = -1.5; // less negative == more protusion of camera out the front
 cam_pcb_offset = -16.5 - cam_z_offset;
@@ -46,9 +47,14 @@ pir_mount_offset = -0.5;
 pir_mount_w = 35;
 pir_mount_ridge = 4.5;
 pir_mount_ridge_wide = 6;
+pir_mount_ridge_long_mid = 16;
 pir_mount_ridge_high = 3.3;
 pir_mount_h = 2;
 pir_mount_d = 4;
+
+// allow a bit of room for dovetails and screws
+visor_offset = 3;
+slot_size = 2;
 
 // x=1; // Wall thickness
 // difference(){
@@ -88,13 +94,16 @@ module cam_at_position2() {
   translate([ xw_case / 2.0, yh_case + cam_y_offset_from_top, zd_case + cam_z_offset ]) {
     cylinder(15.6, 7.56, 7.56);
 
+    irr = 3.4;
+    spotrr = 9.9;
+
     translate([ 5, 0, 0 ]) {
-      translate([ -30.5, 0, -5 ]) cylinder(15.6, 9.49, 9.49);
-      translate([ -19.5, 6.9, -5 ]) cylinder(11.2, 3.2, 3.2, $fn = 20);
+      translate([ -30.5, 0, -5 ]) cylinder(15.6, spotrr, spotrr);
+      translate([ -19.5, 6.9, -5 ]) cylinder(11.2, irr, irr, $fn = 20);
     }
     translate([ -5, 0, 0 ]) {
-      translate([ 30.5, 0, -5 ]) cylinder(15.6, 9.49, 9.49);
-      translate([ 19.5, -6.9, -5 ]) cylinder(11.2, 3.2, 3.2, $fn = 20);
+      translate([ 30.5, 0, -5 ]) cylinder(15.6, spotrr, spotrr);
+      translate([ 19.5, -6.9, -5 ]) cylinder(11.2, irr, irr, $fn = 20);
     }
   }
 }
@@ -143,45 +152,98 @@ module enclosure() {
 
 module front_lid() {
   // case front lid
-  union() {
-    difference() {
-      translate([ 0, 0, zd_case ]) SmoothXYCube([ xw_case, yh_case, wall_thickness ], r_case);
-      cam_at_position2();
+  difference() {
+    union() {
+      difference() {
+        translate([ 0, 0, zd_case ]) SmoothXYCube([ xw_case, yh_case, wall_thickness ], r_case);
+        cam_at_position2();
 
-      // hole for PIR sensor
-      translate([ xw_case / 2 - 1, pir_radius + pir_base_y, zd_case - 0.1 ])
-          cylinder(wall_thickness + 0.2, pir_radius, pir_radius);
+        // hole for PIR sensor
+        translate([ xw_case / 2 - 1, pir_radius + pir_base_y, zd_case - 0.1 ])
+            cylinder(wall_thickness + 0.2, pir_radius, pir_radius);
+      }
+      // mounts on back
+      
+      // PIR
+      pir_xx = (xw_case - pir_mount_w - wall_thickness) / 2;
+      translate([ pir_xx, pir_base_y - pir_mount_h + pir_mount_offset, zd_case - pir_mount_d ])
+          cube([ pir_mount_w, pir_mount_h, pir_mount_d ]);
+      // center the pir ridges, cap along the pir
+      pir_ridge_lmax = (pir_radius * 2 - pir_mount_offset);
+      if (pir_mount_ridge_long_mid > pir_ridge_lmax) { pir_mount_ridge_long_mid = pir_ridge_lmax; }
+      pir_ridge_o = (pir_ridge_lmax - pir_mount_ridge_long_mid) / 2;
+      translate([ pir_xx, pir_base_y + pir_ridge_o + pir_mount_offset, zd_case - pir_mount_ridge_high ])
+          cube([ pir_mount_ridge_wide, pir_mount_ridge_long_mid, pir_mount_ridge_high ]);
+      translate([
+        pir_xx + pir_mount_w - pir_mount_ridge_wide, pir_base_y + pir_ridge_o + pir_mount_offset, zd_case -
+        pir_mount_ridge_high
+      ]) cube([ pir_mount_ridge_wide, pir_mount_ridge_long_mid, pir_mount_ridge_high ]);
+
+      // support for the FFC connector to even out the camera itself
+      ffc_w = 14;
+      ffc_xx =  (xw_case - ffc_w) / 2;
+      ffc_yy = 13.5;
+      translate([ffc_xx, yh_case + cam_y_offset_from_top - ffc_yy, zd_case - wall_thickness])
+      cube([ffc_w, 3, 2]);
+      
+      // support for the spotlights - needs to be quite flat
+      tws = 3.6;
+      twh = 1.4;
+      twf = 10.8;
+      translate([(xw_case / 2) + twf,yh_case + cam_y_offset_from_top - 10,zd_case])
+      rotate([-90,0,90])
+      right_triangle([tws,twh,tws]);
+
+      translate([(xw_case / 2) + twf,yh_case + cam_y_offset_from_top + 10,zd_case])
+      rotate([-90,0,180])
+      right_triangle([tws,twh,tws]);
+
+      translate([(xw_case / 2) - twf,yh_case + cam_y_offset_from_top + 10,zd_case])
+      rotate([-90,0,-90])
+      right_triangle([tws,twh,tws]);
+
+      translate([(xw_case / 2) - twf,yh_case + cam_y_offset_from_top - 10,zd_case])
+      rotate([-90,0,0])
+      right_triangle([tws,twh,tws]);
+      
+
+//      hot_mount_w = 4;
+//      hot_hh = 4;
+//      hot_yy = 9;
+//      hot_xx = xw_case / 2;
+//      hot_xx_off = 10;
+//      translate([ hot_xx + hot_xx_off, yh_case - hot_yy + cam_y_offset_from_top + 8, zd_case - hot_hh ])
+//          cube([ hot_mount_w, hot_yy, hot_hh ]);
+//
+//      translate([ hot_xx - hot_xx_off - hot_mount_w, yh_case - hot_yy + cam_y_offset_from_top + 2, zd_case - hot_hh ])
+//          cube([ hot_mount_w, hot_yy, hot_hh ]);
     }
-    // mounts on back
-    pir_xx = (xw_case - pir_mount_w - wall_thickness) / 2;
-    translate([ pir_xx, pir_base_y - pir_mount_h + pir_mount_offset, zd_case - pir_mount_d ])
-        cube([ pir_mount_w, pir_mount_h, pir_mount_d ]);
-
-    translate([ pir_xx, pir_base_y + pir_mount_offset, zd_case - pir_mount_ridge_high ])
-        cube([ pir_mount_ridge_wide, pir_radius * 2 - pir_mount_offset, pir_mount_ridge_high ]);
-    translate([
-      pir_xx + pir_mount_w - pir_mount_ridge_wide, pir_base_y + pir_mount_offset, zd_case - pir_mount_ridge_high
-    ]) cube([ pir_mount_ridge_wide, pir_radius * 2 - pir_mount_offset, pir_mount_ridge_high ]);
-
-    hot_mount_w = 6;
-    hot_hh = 4;
-    hot_yy = 10;
-    hot_xx = xw_case / 2;
-    translate([ hot_xx + 8, yh_case - hot_yy + cam_y_offset_from_top + 8, zd_case - hot_hh ])
-        cube([ hot_mount_w, hot_yy, hot_hh ]);
-
-    translate([ hot_xx - 8 - hot_mount_w, yh_case - hot_yy + cam_y_offset_from_top + 2, zd_case - hot_hh ])
-        cube([ hot_mount_w, hot_yy, hot_hh ]);
+    // visor slots
+    translate([ 24, yh_case - visor_offset - slot_size, zd_case - 0.1 ])
+        cube([ 8, slot_size, wall_thickness + 0.2 ]);
+    translate([ xw_case - 24 - 8, yh_case - visor_offset - slot_size, zd_case - 0.1 ])
+        cube([ 8, slot_size, wall_thickness + 0.2 ]);
+    translate([ xw_case / 2 - 4, yh_case - visor_offset - slot_size, zd_case - 0.1 ])
+        cube([ 8, slot_size, wall_thickness + 0.2 ]);
   }
   // TODO: screw holes
 }
 module sunvisor() {
   // sun lense on front
-  translate([ 0, yh_case - visor_h, zd_case ]) linear_extrude(height = 18) visor();
+  translate([ 0, yh_case - visor_h - visor_offset, zd_case + wall_thickness ]) linear_extrude(height = 18)
+      visor();
+
+  // visor slots
+  translate([ 24, yh_case - visor_offset - slot_size, zd_case - 0.1 ])
+      cube([ 8, slot_size, wall_thickness + 0.2 ]);
+  translate([ xw_case - 24 - 8, yh_case - visor_offset - slot_size, zd_case - 0.1 ])
+      cube([ 8, slot_size, wall_thickness + 0.2 ]);
+  translate([ xw_case / 2 - 4, yh_case - visor_offset - slot_size, zd_case - 0.1 ])
+      cube([ 8, slot_size, wall_thickness + 0.2 ]);
 }
 
 // show_camera = 1;
-// parts = 0;
+parts = 1;
 
 if (show_camera == 1) {
   // color([.7,.7,.7,0.79]) cam_at_position();
