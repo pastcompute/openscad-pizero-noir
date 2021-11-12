@@ -24,17 +24,18 @@ parts = 0;
 wall_thickness = 2;
 
 xw_case = 100; // width viewed from front, assuming front is where camera lense is
-yh_case = 90; // height viewed from front
+yh_case = 70; // height viewed from front
 zd_case = 38;
 r_case = 6;
 visor_rw = 6;
 visor_h = 10;
 sr = 6; // radii of screw columns in corners
 
-cam_y_offset = 30;   // 0 means lens is front middle; +ve gives more space to FPC cable
+cam_y_offset_from_top = -18;   // 0 means middle of lens would cut top of enclosure...
+// -16 lines up as original, with original back ridges
 cam_z_offset = -1.5; // less negative == more protusion of camera out the front
 cam_pcb_offset = -16.5 - cam_z_offset;
-pi_cam_offset = 9;
+pi_cam_offset = 9; // z
 pi_cam_strut_offset = 27.5;
 cutout_offset = 20;
 cutout_width = 32;
@@ -88,13 +89,13 @@ module bbox() {
 }
 
 module cam_at_position() {
-translate([xw_case / 2.0, yh_case / 2.0 + cam_y_offset, zd_case + cam_z_offset]) {
+translate([xw_case / 2.0, yh_case + cam_y_offset_from_top, zd_case + cam_z_offset]) {
   object1();
 }
 }
 
 module cam_at_position2() {
-translate([xw_case / 2.0, yh_case / 2.0 + cam_y_offset, zd_case + cam_z_offset]) {
+translate([xw_case / 2.0, yh_case + cam_y_offset_from_top, zd_case + cam_z_offset]) {
   cylinder(15.6, 7.56,7.56);
 
   translate([5,0,0]) {  
@@ -152,6 +153,7 @@ module enclosure_core() {
 
 module enclosure() {
   enclosure_core();
+  
   // struts
   translate([pi_cam_strut_offset, 0, -cam_pcb_offset])
   cube([4, yh_case, zd_case + cam_pcb_offset - pi_cam_offset]);
@@ -185,25 +187,27 @@ hot_mount_w = 6;
 hot_hh = 4;
 hot_yy = 10;
 hot_xx = xw_case / 2;
-translate([hot_xx + 8, yh_case - hot_yy - 8, zd_case - hot_hh])
+translate([hot_xx + 8, yh_case - hot_yy + cam_y_offset_from_top + 8, zd_case - hot_hh])
 cube([hot_mount_w, hot_yy, hot_hh]);
 
-translate([hot_xx - 8 - hot_mount_w, yh_case - hot_yy - 14, zd_case - hot_hh])
+translate([hot_xx - 8 - hot_mount_w, yh_case - hot_yy + cam_y_offset_from_top + 2, zd_case - hot_hh])
 cube([hot_mount_w, hot_yy, hot_hh]);
-
-
-// sun lense on front
-translate([0,yh_case - visor_h,zd_case])
-linear_extrude(height=18)
-visor();
 
 
 }
 // TODO: screw holes
 }
+module sunvisor() {
+// sun lense on front
+translate([0,yh_case - visor_h,zd_case])
+linear_extrude(height=18)
+visor();
+  }
+
 
 //show_camera = 1;
-parts = 0;
+//parts = 0;
+parts = 1;
 
 //%bbox() cam_at_position();
 
@@ -219,4 +223,8 @@ if (parts == 0 || parts == 1) {
 if (parts == 0 || parts == 2) {
   color([1.0,0,0])
   enclosure();
+}
+if (parts == 0 || parts == 3) {
+  color([1.0,1.0,0])
+  sunvisor();
 }
