@@ -17,6 +17,7 @@ parts = 0;
 // openscad -Dshow_camera=0 -Dparts=1 -o part1-lid.stl case.scad
 // openscad -Dshow_camera=0 -Dparts=2 -o part2-enc.stl case.scad
 
+include <../BOSL/constants.scad>
 include <../BOSL/shapes.scad>
 include <../Round-Anything/polyround.scad>
 include <../openscad-openbuilds/utils/colors.scad>
@@ -295,7 +296,7 @@ module adapt0(offs = 4) {
   depth = 15;
   oo = depth;
   dx = 0.5;
-  plugwall = 2;
+  plugwall = 3;
   wx = wall_thickness + dx;
   translate([ 0, 0, -offs ]) union() {
     difference() {
@@ -304,10 +305,13 @@ module adapt0(offs = 4) {
         translate([ xw_case / 2, yh_case / 2, -depth ]) cylinder(r = piped / 2, h = 5);
       }
       difference() {
+        // inner hull to be subtracted from solid hull
         hull() {
-          translate([ wx, wx, 0 ]) enclosure_core(offs, xw_case - wx * 2, yh_case - wx * 2, columns = false);
-          translate([ xw_case / 2, yh_case / 2, -depth ]) cylinder(r = piped2 / 2 - pipedmeat, h = 5);
+          translate([ wx, wx, 0 ]) enclosure_core(offs + 0.1, xw_case - wx * 2, yh_case - wx * 2, columns = false);
+          translate([ xw_case / 2, yh_case / 2, -depth - 0.1 ]) cylinder(r = piped2 / 2 - pipedmeat, h = 5);
         }
+        // and we remove from that part to be subtracted,
+        // an impression of the columns that extends through, so we can infill the corners neatly
         translate([ 0, 0, -offs - oo ]) column1(offs + oo);
         translate([ xw_case - 2 * sr, 0, -offs - oo ]) column1(offs + oo);
         translate([ xw_case - 2 * sr, yh_case - 2 * sr, -offs - oo ]) column1(offs + oo);
@@ -322,8 +326,11 @@ module adapt0(offs = 4) {
     difference() {
       translate([ xw_case / 2, yh_case / 2, -depth - socket ])
           cylinder(socket, piped2 / 2, piped2 / 2 + taper_out, $fn = 40);
-      translate([ xw_case / 2, yh_case / 2, -depth - socket ])
-          cylinder(socket, piped2 / 2 - plugwall, piped2 / 2 - plugwall);
+      translate([ xw_case / 2, yh_case / 2, -depth - socket - 0.01 ])
+          cylinder(socket + 0.02, piped2 / 2 - plugwall, piped2 / 2 - plugwall);
+      // slots - to connect pi carrier to
+      translate([0, yh_case/2 - 3/2, -depth - socket - 0.5 ])
+      cube([xw_case, 3, 5]);
     }
   }
 }
@@ -350,18 +357,13 @@ module endstop() {
 module adapt(offs = 4) { adapt0(offs); }
 
 module enclosure2() {
-  translate([ 0, 0, zd_case - 10 ]) enclosure_core(10);
-  translate([ 0, 0, zd_case - 10 ]) adapt();
+  translate([ 0, 0, zd_case - 10 ]) enclosure_core(6);
+  translate([ 0, 0, zd_case - 10 ]) adapt(2);
   //  hull() {
   //    translate([xw_case/2, yh_case/2,-60])
   //      cylinder(r=30,h=12);
   //  }
 }
-
-// show_camera = 1;
-// parts = 2;
-//parts = 5;
-// adapt();
 
 // pi starts with its center of gravity at 0,0,0 ...
 // so lets turn it in the orientation we need, with the CSI towards us
@@ -378,26 +380,28 @@ module orientpi() {
 }
 
 module framec(barw, bart) {
-  hh = 25;
+  hh = 16;
   intersection() {
     difference() {
-      cylinder(barw + 2, pvcinside/2, pvcinside/2);
-      translate([0,0,-0.1])
-      cylinder(barw + 2 + 0.2, pvcinside/2 - bart, pvcinside/2 - bart);
+      cylinder(barw, pvcinside/2, pvcinside/2);
+      translate([0,0,-0.1]) cylinder(barw + 0.2, pvcinside/2 - bart, pvcinside/2 - bart);
     }
-    translate([-pvcinside/2, -hh/2, 0])
-      cube([pvcinside, hh, barw+2]);
+    translate([-pvcinside/2, 0, 0]) cube([pvcinside, hh, barw]);
   }
 }
 
 // create a frame to snugly hold the pi inside the PVC pipe
 module piframe() {
-  barw = 6;
+  barw = 7;
   bart = 3;
   plen = 64.5;
   pwid = 30;
+  slot_d = 5;
+  slot_w = 4;
+  slot_h = 3;
   
   // cross bars to screw the pi to
+  translate([0,bart/2,0])
   difference() {
     union() {
       translate([-pvcinside/2, -bart,-barw/2]) cube([pvcinside, bart, barw]);
@@ -413,15 +417,21 @@ module piframe() {
   }
  
   // a circular thingy to fit in
-  translate([0,0,-barw+2])
-  framec(barw, bart);
+  translate([0,0,-barw + barw/2])
+  framec(barw, bart+2);
 
-  translate([0,0,-plen+2])
-  framec(barw, bart);
-  
-  // can we try for some springiness?
-  // or perhaps connect it to the end cap...
-  
+  translate([0,0,-plen + barw/2])
+  framec(barw, bart+2);
+
+  // tabs to connect to the slots in the adaptor enclosure
+  translate([pvcinside/2 - slot_w, -bart/2, barw/2]) {
+    cube([slot_w, slot_h, slot_d]);
+    rotate([0,-90,0]) right_triangle([slot_d, slot_h, slot_d]);
+  }
+  translate([-pvcinside/2, -bart/2, barw/2]) {
+    cube([slot_w, slot_h, slot_d]);
+    translate([slot_w, 0, 0]) right_triangle([slot_d, slot_h, slot_d]);
+  }
 }
 
 //translate([xw_case / 2, 0, 0])
@@ -447,7 +457,7 @@ if (parts == 0 || parts == 1) {
   color([ 0, 0, 1, 0.65 ]) front_lid();
 }
 if (parts == 0 || parts == 2) {
-  color([ 1.0, 0, 0, 0.5 ]) enclosure2();
+  color([ 0.7, 0.7, 0.7, 0.9 ]) enclosure2();
 }
 if (parts == 0 || parts == 3) {
   color([ 1.0, 1.0, 0 ]) sunvisor();
