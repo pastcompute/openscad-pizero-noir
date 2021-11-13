@@ -71,6 +71,11 @@ clamp_holex = 8;
 arc_sh = 1.8;
 arc_sr = 0.9;
 
+// inside diameter of PVC pipe, make this a snug fit and we will also taper it
+piped2 = 62.4;
+taper_out = 0.5;
+socket = 12;
+
 // x=1; // Wall thickness
 // difference(){
 // cube([50,50,100], center=true);
@@ -284,7 +289,6 @@ module adapt0(offs = 4) {
   piped2 = 62;
   pipedmeat = 2; // extra to tsop invalid 2-manifold joining the plug
   depth = 15;
-  socket = 8;
   oo = depth;
   dx = 0.5;
   plugwall = 2;
@@ -313,7 +317,7 @@ module adapt0(offs = 4) {
     // "plug"
     difference() {
       translate([ xw_case / 2, yh_case / 2, -depth - socket ])
-          cylinder(socket, piped2 / 2, piped2 / 2, $fn = 40);
+          cylinder(socket, piped2 / 2, piped2 / 2 + taper_out, $fn = 40);
       translate([ xw_case / 2, yh_case / 2, -depth - socket ])
           cylinder(socket, piped2 / 2 - plugwall, piped2 / 2 - plugwall);
     }
@@ -323,13 +327,11 @@ module adapt0(offs = 4) {
 module endstop() {
   depth = 15;
   plugwall = 2;
-  socket = 8;
-  piped2 = 62;
   backingr = 84 / 2;
   glanser = 8;
   difference() {
     translate([ xw_case / 2, yh_case / 2, 0 ])
-        cylinder(socket, piped2 / 2, piped2 / 2, $fn = 40);
+        cylinder(socket, piped2 / 2, piped2 / 2 + taper_out, $fn = 40);
     translate([ xw_case / 2, yh_case / 2, 0 ])
         cylinder(socket, piped2 / 2 - plugwall, piped2 / 2 - plugwall);
   }
