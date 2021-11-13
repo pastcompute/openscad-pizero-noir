@@ -320,6 +320,27 @@ module adapt0(offs = 4) {
   }
 }
 
+module endstop() {
+  depth = 15;
+  plugwall = 2;
+  socket = 8;
+  piped2 = 62;
+  backingr = 84 / 2;
+  glanser = 8;
+  difference() {
+    translate([ xw_case / 2, yh_case / 2, 0 ])
+        cylinder(socket, piped2 / 2, piped2 / 2, $fn = 40);
+    translate([ xw_case / 2, yh_case / 2, 0 ])
+        cylinder(socket, piped2 / 2 - plugwall, piped2 / 2 - plugwall);
+  }
+  difference() {
+    translate([ xw_case / 2, yh_case / 2, socket ])
+      cylinder(3, backingr, backingr);
+    translate([ xw_case / 2, yh_case / 2, socket ])
+      cylinder(3, glanser, glanser);
+  }
+}
+
 module adapt(offs = 4) { adapt0(offs); }
 
 module enclosure2() {
@@ -333,7 +354,7 @@ module enclosure2() {
 
 // show_camera = 1;
 // parts = 2;
-// parts = -1;
+//parts = 5;
 // adapt();
 
 if (show_camera == 1) {
@@ -358,4 +379,8 @@ if (parts == 0 || parts == 4) {
       zd_case - wall_thickness - clampm_h + 1 - 4
     ]) clamp();
   }
+}
+
+if (parts == 0 || parts == 5) {
+  color([ 0, 1.0, 0 ]) translate([xw_case, 0, 0]) endstop();
 }
