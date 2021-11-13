@@ -1,6 +1,10 @@
 include <MCAD/materials.scad>
 include <MCAD/units.scad>
 
+show_camera = 0;
+show_pi = 0;
+parts = 0;
+
 // Size check from STL using
 // https://raviriley.github.io/STL-to-OpenSCAD-Converter/
 // - https://www.thingiverse.com/thing:3091624
@@ -18,9 +22,8 @@ include <../Round-Anything/polyround.scad>
 include <../openscad-openbuilds/utils/colors.scad>
 include <../smooth-prim/smooth_prim.scad>
 include <./PI_IRCUT_CameraFromSTL.scad>
-
-show_camera = 0;
-parts = 0;
+include <../NopSCADlib/vitamins/pcb.scad>
+include <../NopSCADlib/vitamins/pcbs.scad>
 
 wall_thickness = 2;
 
@@ -72,7 +75,8 @@ arc_sh = 1.8;
 arc_sr = 0.9;
 
 // inside diameter of PVC pipe, make this a snug fit and we will also taper it
-piped2 = 62.4;
+pvcinside = 62.2;
+piped2 = pvcinside + 0.2;
 taper_out = 0.5;
 socket = 12;
 
@@ -359,6 +363,81 @@ module enclosure2() {
 //parts = 5;
 // adapt();
 
+// pi starts with its center of gravity at 0,0,0 ...
+// so lets turn it in the orientation we need, with the CSI towards us
+// and move it back so the csi end is at 0
+module orientpi() {
+  // finally, rotate it to face our face
+  rotate([-90,0,0]) {
+    // 32.57 lines up the PCB
+    // 29 centers the holes on the axis
+    translate([0,32.57-3.57,0])
+    rotate([0,0,-90])
+    pcb(RPI0);
+  }
+}
+
+module framec(barw, bart) {
+  hh = 25;
+  intersection() {
+    difference() {
+      cylinder(barw + 2, pvcinside/2, pvcinside/2);
+      translate([0,0,-0.1])
+      cylinder(barw + 2 + 0.2, pvcinside/2 - bart, pvcinside/2 - bart);
+    }
+    translate([-pvcinside/2, -hh/2, 0])
+      cube([pvcinside, hh, barw+2]);
+  }
+}
+
+// create a frame to snugly hold the pi inside the PVC pipe
+module piframe() {
+  barw = 6;
+  bart = 3;
+  plen = 64.5;
+  pwid = 30;
+  
+  // cross bars to screw the pi to
+  difference() {
+    union() {
+      translate([-pvcinside/2, -bart,-barw/2]) cube([pvcinside, bart, barw]);
+      translate([-pvcinside/2, -bart,-plen + barw/2]) cube([pvcinside, bart, barw]);
+
+      translate([pwid / 2 - 1, -bart, -plen + barw/2]) cube([barw, bart, plen]);
+      translate([-pwid / 2, -bart, -plen + barw/2]) cube([barw, bart, plen]);
+    }
+    translate([11.5,+0.1,0]) rotate([90,0,0]) cylinder(bart + 0.2, 1, 1);
+    translate([-11.5,+0.1,0]) rotate([90,0,0]) cylinder(bart + 0.2, 1, 1);
+    translate([11.5,+0.1,-plen + barw + 0.5]) rotate([90,0,0]) cylinder(bart + 0.2, 1, 1);
+    translate([-11.5,+0.1,-plen + barw + 0.5]) rotate([90,0,0]) cylinder(bart + 0.2, 1, 1);
+  }
+ 
+  // a circular thingy to fit in
+  translate([0,0,-barw+2])
+  framec(barw, bart);
+
+  translate([0,0,-plen+2])
+  framec(barw, bart);
+  
+  // can we try for some springiness?
+  // or perhaps connect it to the end cap...
+  
+}
+
+//translate([xw_case / 2, 0, 0])
+//rotate([0,-90,-90])
+
+//orientpi();
+//piframe();
+
+//show_pi= 1;
+//parts = 6;
+
+if (show_pi == 1) {
+  // color([.7,.7,.7,0.79]) cam_at_position();
+  color([ .9, 0, 0, 0.79 ]) orientpi();
+}
+
 if (show_camera == 1) {
   // color([.7,.7,.7,0.79]) cam_at_position();
   color([ .9, 0, 0, 0.79 ]) cam_at_position2();
@@ -385,4 +464,8 @@ if (parts == 0 || parts == 4) {
 
 if (parts == 0 || parts == 5) {
   color([ 0, 1.0, 0 ]) translate([xw_case, 0, 0]) endstop();
+}
+
+if (parts == 0 || parts == 6) {
+  color([ 0, 1.0, 0 ]) piframe();
 }
