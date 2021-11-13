@@ -53,7 +53,7 @@ pir_mount_h = 2;
 pir_mount_d = 4;
 
 // allow a bit of room for dovetails and screws
-visor_offset = 3;
+visor_offset = 4;
 slot_size = 2;
 
 // x=1; // Wall thickness
@@ -116,9 +116,9 @@ rp = sunvisorPoints();
 // offset == "thickness" each side of line, smoothness of curve
 module visor() { translate([ 0, -2, 0 ]) polygon(polyRound(beamChain(rp, offset1 = 2, offset2 = -2), 17)); }
 
-module column1() {
+module column1(h=zd_case) {
   // translate([0, 0, 0]) cylinder(zd_case, sr, sr);
-  SmoothXYCube([ 2 * sr, 2 * sr, zd_case ], 4);
+  SmoothXYCube([ 2 * sr, 2 * sr, h ], 4);
 }
 
 module enclosure_core() {
@@ -157,7 +157,13 @@ module front_lid() {
   difference() {
     union() {
       difference() {
-        translate([ 0, 0, zd_case ]) SmoothXYCube([ xw_case, yh_case, wall_thickness ], r_case);
+        union() {
+          translate([ 0, 0, zd_case ]) SmoothXYCube([ xw_case, yh_case, wall_thickness ], r_case);
+          translate([ 0, 0, zd_case]) column1(wall_thickness);
+          translate([ xw_case - 2 * sr, 0, zd_case]) column1(wall_thickness);
+          translate([ xw_case - 2 * sr, yh_case - 2 * sr, zd_case]) column1(wall_thickness);
+          translate([ 0, yh_case - 2 * sr, zd_case]) column1(wall_thickness);
+        }
         cam_at_position2();
 
         // hole for PIR sensor
@@ -178,27 +184,27 @@ module front_lid() {
       // mounts on back
       
       // 3/4 supporting arc around the spots
-      sh = 1.8;
-      sr = 0.9;
+      arc_sh = 1.8;
+      arc_sr = 0.9;
       translate([ xw_case / 2.0, yh_case + cam_y_offset_from_top, zd_case ]) {
-        translate([ -spotxo, 0, -sh ])
+        translate([ -spotxo, 0, -arc_sh ])
         difference() {
-          cylinder(sh, spotrr+ sr, spotrr + sr);
+          cylinder(arc_sh, spotrr+ arc_sr, spotrr + arc_sr);
           translate([0,0,-0.1])
-            cylinder(sh + 0.2, spotrr, spotrr);
-          translate([ 0, -spotrr+sr, -sh ])
-            cube([spotrr+sr,1.8*spotrr,spotrr]);
+            cylinder(arc_sh + 0.2, spotrr, spotrr);
+          translate([ 0, -spotrr+arc_sr, -sh ])
+            cube([spotrr+arc_sr,1.8*spotrr,spotrr]);
         }
-        translate([ spotxo, 0, -sh ])
+        translate([ spotxo, 0, -arc_sh ])
         difference() {
-          cylinder(sh, spotrr+ sr, spotrr + sr);
+          cylinder(arc_sh, spotrr+ arc_sr, spotrr + arc_sr);
           translate([0,0,-0.1])
             cylinder(sh + 0.2, spotrr, spotrr);
         rotate([0,0,180])
-          translate([ 0, -spotrr+sr, -sh ])
-            cube([spotrr+sr,1.8*spotrr,spotrr]);
+          translate([ 0, -spotrr+arc_sr, -arc_sh ])
+            cube([spotrr+arc_sr,1.8*spotrr,spotrr]);
         }
-      }
+      }  
 
       // PIR
       pir_xx = (xw_case - pir_mount_w - wall_thickness) / 2;
@@ -250,7 +256,6 @@ module front_lid() {
     translate([ xw_case / 2 - 4, yh_case - visor_offset - slot_size, zd_case - 0.1 ])
         cube([ 8, slot_size, wall_thickness + 0.2 ]);
   }
-  // TODO: screw holes
 }
 module sunvisor() {
   // sun lense on front
