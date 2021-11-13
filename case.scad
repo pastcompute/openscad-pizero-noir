@@ -131,22 +131,24 @@ module column1(h = zd_case) {
   SmoothXYCube([ 2 * sr, 2 * sr, h ], 4);
 }
 
-module enclosure_core() {
+module enclosure_core(depth = zd_case, w = xw_case, h = yh_case, columns = true) {
   union() {
     difference() {
-      SmoothXYCube([ xw_case, yh_case, zd_case ], r_case);
+      SmoothXYCube([ w, h, depth ], r_case);
       translate([ wall_thickness, wall_thickness, -1 ])
-          SmoothXYCube([ xw_case - 2 * wall_thickness, yh_case - 2 * wall_thickness, zd_case + 2 ], r_case);
+          SmoothXYCube([ w - 2 * wall_thickness, h - 2 * wall_thickness, depth + 2 ], r_case);
 
-      // cut out for USB cabling
-      translate([ cutout_offset, -0.01 + yh_case - wall_thickness, -0.20 + 3 ])
-          cube([ cutout_width, wall_thickness + 0.2, 5 + 0.2 + 3 ]);
+      //      // cut out for USB cabling
+      //      translate([ cutout_offset, -0.01 + h - wall_thickness, -0.20 + 3 ])
+      //          cube([ cutout_width, wall_thickness + 0.2, 5 + 0.2 + 3 ]);
     }
 
-    translate([ 0, 0, 0 ]) column1();
-    translate([ xw_case - 2 * sr, 0, 0 ]) column1();
-    translate([ xw_case - 2 * sr, yh_case - 2 * sr, 0 ]) column1();
-    translate([ 0, yh_case - 2 * sr, 0 ]) column1();
+    if (columns) {
+      translate([ 0, 0, 0 ]) column1(depth);
+      translate([ w - 2 * sr, 0, 0 ]) column1(depth);
+      translate([ w - 2 * sr, h - 2 * sr, 0 ]) column1(depth);
+      translate([ 0, h - 2 * sr, 0 ]) column1(depth);
+    }
   }
 }
 
@@ -218,12 +220,11 @@ module front_lid() {
         pir_mount_ridge_long_mid = pir_ridge_lmax;
       }
       pir_ridge_o = (pir_ridge_lmax - pir_mount_ridge_long_mid) / 2;
-      translate([ pir_xx, pir_base_y + pir_ridge_o + pir_mount_offset, zd_case - pir_mount_ridge_high ])
+      pir2 = pir_base_y + pir_ridge_o + pir_mount_offset;
+      translate([ pir_xx, pir2, zd_case - pir_mount_ridge_high ])
           cube([ pir_mount_ridge_wide, pir_mount_ridge_long_mid, pir_mount_ridge_high ]);
-      translate([
-        pir_xx + pir_mount_w - pir_mount_ridge_wide, pir_base_y + pir_ridge_o + pir_mount_offset, zd_case -
-        pir_mount_ridge_high
-      ]) cube([ pir_mount_ridge_wide, pir_mount_ridge,_long_mid, pir_mount_ridge_high ]);
+      translate([ pir_xx + pir_mount_w - pir_mount_ridge_wide, pir2, zd_case - pir_mount_ridge_high ])
+          cube([ pir_mount_ridge_wide, pir_mount_ridge_long_mid, pir_mount_ridge_high ]);
 
       // support for the FFC connector to even out the camera itself
       ffc_w = 14;
@@ -276,8 +277,64 @@ module clamp(h1 = 3) {
   }
 }
 
+// Adaptor to 68mm PVC pipe
+
+module adapt0(offs = 4) {
+  piped = 69;
+  piped2 = 62;
+  pipedmeat = 2; // extra to tsop invalid 2-manifold joining the plug
+  depth = 15;
+  socket = 8;
+  oo = depth;
+  dx = 0.5;
+  plugwall = 2;
+  wx = wall_thickness + dx;
+  translate([ 0, 0, -offs ]) union() {
+    difference() {
+      hull() {
+        enclosure_core(offs, columns = false);
+        translate([ xw_case / 2, yh_case / 2, -depth ]) cylinder(r = piped / 2, h = 5);
+      }
+      difference() {
+        hull() {
+          translate([ wx, wx, 0 ]) enclosure_core(offs, xw_case - wx * 2, yh_case - wx * 2, columns = false);
+          translate([ xw_case / 2, yh_case / 2, -depth ]) cylinder(r = piped2 / 2 - pipedmeat, h = 5);
+        }
+        translate([ 0, 0, -offs - oo ]) column1(offs + oo);
+        translate([ xw_case - 2 * sr, 0, -offs - oo ]) column1(offs + oo);
+        translate([ xw_case - 2 * sr, yh_case - 2 * sr, -offs - oo ]) column1(offs + oo);
+        translate([ 0, yh_case - 2 * sr, -offs - oo ]) column1(offs + oo);
+      }
+    }
+    column1(offs);
+    translate([ xw_case - 2 * sr, 0, 0 ]) column1(offs);
+    translate([ xw_case - 2 * sr, yh_case - 2 * sr, 0 ]) column1(offs);
+    translate([ 0, yh_case - 2 * sr, 0 ]) column1(offs);
+    // "plug"
+    difference() {
+      translate([ xw_case / 2, yh_case / 2, -depth - socket ])
+          cylinder(socket, piped2 / 2, piped2 / 2, $fn = 40);
+      translate([ xw_case / 2, yh_case / 2, -depth - socket ])
+          cylinder(socket, piped2 / 2 - plugwall, piped2 / 2 - plugwall);
+    }
+  }
+}
+
+module adapt(offs = 4) { adapt0(offs); }
+
+module enclosure2() {
+  translate([ 0, 0, zd_case - 10 ]) enclosure_core(10);
+  translate([ 0, 0, zd_case - 10 ]) adapt();
+  //  hull() {
+  //    translate([xw_case/2, yh_case/2,-60])
+  //      cylinder(r=30,h=12);
+  //  }
+}
+
 // show_camera = 1;
-// parts = 1;
+// parts = 2;
+// parts = -1;
+// adapt();
 
 if (show_camera == 1) {
   // color([.7,.7,.7,0.79]) cam_at_position();
@@ -288,7 +345,7 @@ if (parts == 0 || parts == 1) {
   color([ 0, 0, 1, 0.65 ]) front_lid();
 }
 if (parts == 0 || parts == 2) {
-  color([ 1.0, 0, 0 ]) enclosure();
+  color([ 1.0, 0, 0, 0.5 ]) enclosure2();
 }
 if (parts == 0 || parts == 3) {
   color([ 1.0, 1.0, 0 ]) sunvisor();
