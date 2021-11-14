@@ -70,7 +70,7 @@ clampm_h = 2.5;
 clamp_w = 6;
 clamp_cr = 4;
 clamp_holer = 1;
-slot_l = 19;
+slot_l = 12;
 clamp_holex = 8;
 arc_sh = 1.8;
 arc_sr = 0.9;
@@ -279,18 +279,25 @@ module sunvisor() {
       visor();
 
   // visor slots
-  translate([ 24, yh_case - visor_offset - slot_size - slot_slack, zd_case - 0.1 ])
-      cube([ 8, slot_size, wall_thickness + 0.2 ]);
-  translate([ xw_case - 24 - 8, yh_case - visor_offset - slot_size - slot_slack, zd_case - 0.1 ])
-      cube([ 8, slot_size, wall_thickness + 0.2 ]);
-  translate([ xw_case / 2 - 4, yh_case - visor_offset - slot_size - slot_slack, zd_case - 0.1 ])
-      cube([ 8, slot_size, wall_thickness + 0.2 ]);
+  translate([ 24, yh_case - visor_offset - slot_size, zd_case - 0.1 ])
+      cube([ 8, slot_size - slot_slack, wall_thickness + 0.2 ]);
+  translate([ xw_case - 24 - 8, yh_case - visor_offset - slot_size, zd_case - 0.1 ])
+      cube([ 8, slot_size - slot_slack, wall_thickness + 0.2 ]);
+  translate([ xw_case / 2 - 4, yh_case - visor_offset - slot_size, zd_case - 0.1 ])
+      cube([ 8, slot_size - slot_slack, wall_thickness + 0.2 ]);
 }
 
-module clamp(h1 = 3) {
+module clamp(h1 = 2) {
+  ee = (slot_l + 2 * clamp_cr);
+  // we want the center of the hole, to be clamp_cr in from the end, + a 1/2 clamp_holer to account for hole
+  // the e-e width is slot_l + 2 * clamp_cr
+  // untranslated hole is in the middle
+  // thus if slot_l = 12, ee = 20, offset from middle is -8
+  // thus if slot_l = 22, ee = 30, offset from middle is -13
   difference() {
+    translate([0,0,0])
     slot(h = h1, l = slot_l, r = clamp_cr);
-    translate([ -clamp_holex, 0, -h1 / 2 - 0.1 ]) cylinder(h1 + 0.2, clamp_holer, clamp_holer, $fn = 20);
+    translate([ -ee/2 + clamp_cr/2 + clamp_holer, 0, -h1 / 2 - 0.1 ]) cylinder(h1 + 0.2, clamp_holer, clamp_holer, $fn = 20);
   }
 }
 
@@ -350,14 +357,14 @@ module endstop() {
   difference() {
     translate([ xw_case / 2, yh_case / 2, 0 ])
         cylinder(socket, piped2 / 2, piped2 / 2 + taper_out, $fn = 40);
-    translate([ xw_case / 2, yh_case / 2, 0 ])
-        cylinder(socket, piped2 / 2 - plugwall, piped2 / 2 - plugwall);
+    translate([ xw_case / 2, yh_case / 2, -0.1 ])
+        cylinder(socket + 0.2, piped2 / 2 - plugwall, piped2 / 2 - plugwall);
   }
   difference() {
-    translate([ xw_case / 2, yh_case / 2, socket ])
+    translate([ xw_case / 2, yh_case / 2, socket + .1 ])
       cylinder(3, backingr, backingr);
     translate([ xw_case / 2, yh_case / 2, socket ])
-      cylinder(3, glanser, glanser);
+      cylinder(3.2, glanser, glanser);
   }
 }
 
@@ -499,10 +506,8 @@ if (parts == 0 || parts == 3) {
 
 if (parts == 0 || parts == 4) {
   color([ 1.0, 1.0, 1.0 ]) {
-    translate([
-      clampm_x + slot_l - clamp_holex, yh_case + cam_y_offset_from_top - wall_thickness + 1.5 + clampm_x / 2,
-      zd_case - wall_thickness - clampm_h + 1 - 4
-    ]) clamp();
+    translate([60,0,0]) clamp();
+    translate([60,-15,0]) clamp();
   }
 }
 
