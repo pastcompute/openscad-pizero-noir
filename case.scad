@@ -76,10 +76,17 @@ arc_sh = 1.8;
 arc_sr = 0.9;
 
 // inside diameter of PVC pipe, make this a snug fit and we will also taper it
+pvcoutside = 69;
 pvcinside = 62.2;
 piped2 = pvcinside + 0.2;
 taper_out = 0.5;
 socket = 12;
+
+// slot size. the receptacle will need some slack to deal with 3-d printing expansion
+// otherwise the join is very very tight
+piframe_slot_h = 3;
+slot_slack = 0.2;
+
 
 // x=1; // Wall thickness
 // difference(){
@@ -290,8 +297,7 @@ module clamp(h1 = 3) {
 // Adaptor to 68mm PVC pipe
 
 module adapt0(offs = 4) {
-  piped = 69;
-  piped2 = 62;
+  piped = pvcoutside;
   pipedmeat = 2; // extra to tsop invalid 2-manifold joining the plug
   depth = 15;
   oo = depth;
@@ -328,9 +334,10 @@ module adapt0(offs = 4) {
           cylinder(socket, piped2 / 2, piped2 / 2 + taper_out, $fn = 40);
       translate([ xw_case / 2, yh_case / 2, -depth - socket - 0.01 ])
           cylinder(socket + 0.02, piped2 / 2 - plugwall, piped2 / 2 - plugwall);
+
       // slots - to connect pi carrier to
       translate([0, yh_case/2 - 3/2, -depth - socket - 0.5 ])
-      cube([xw_case, 3, 5]);
+      cube([xw_case, piframe_slot_h + slot_slack, 5]);
     }
   }
 }
@@ -398,7 +405,7 @@ module piframe() {
   pwid = 30;
   slot_d = 5;
   slot_w = 4;
-  slot_h = 3;
+  slot_h = piframe_slot_h;
   
   // cross bars to screw the pi to
   translate([0,bart/2,0])
