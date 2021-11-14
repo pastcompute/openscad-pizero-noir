@@ -69,7 +69,7 @@ clampm_x = 5;
 clampm_h = 2.5;
 clamp_w = 6;
 clamp_cr = 4;
-clamp_holer = 1;
+clamp_thread_diam = 2.89;
 slot_l = 12;
 clamp_holex = 8;
 arc_sh = 1.8;
@@ -252,16 +252,17 @@ module front_lid() {
           cube([ ffc_w, 3, ffc_h ]);
 
       // mounts for clamping the spotlights
+      hole_r = clamp_thread_diam/2 - 0.1; // allow a bit for bite
       translate([ clampm_x, yh_case + cam_y_offset_from_top - wall_thickness + 1, zd_case - clampm_h ])
           difference() {
         cube([ clamp_w, clamp_w, clampm_h ]);
-        translate([ clamp_w / 2, clamp_w / 2 ]) cylinder(clampm_h, 1, 1, true, $fn = 20);
+        translate([ clamp_w / 2, clamp_w / 2 ]) cylinder(clampm_h, hole_r, hole_r, true, $fn = 20);
       }
       translate([
         xw_case - clampm_x - clamp_w, yh_case + cam_y_offset_from_top - wall_thickness - 1, zd_case - clampm_h
       ]) difference() {
         cube([ clamp_w, clamp_w, clampm_h ]);
-        translate([ clamp_w / 2, clamp_w / 2, 0 ]) cylinder(clampm_h, 1, 1, true, $fn = 20);
+        translate([ clamp_w / 2, clamp_w / 2, 0 ]) cylinder(clampm_h, hole_r, hole_r, true, $fn = 20);
       }
     }
     // visor slots
@@ -287,9 +288,9 @@ module sunvisor() {
       cube([ 8, slot_size - slot_slack, wall_thickness + 0.2 ]);
 }
 
-module clamp(h1 = 2) {
+module clamp(h1 = 2, hole_r = 2) {
   ee = (slot_l + 2 * clamp_cr);
-  // we want the center of the hole, to be clamp_cr in from the end, + a 1/2 clamp_holer to account for hole
+  // we want the center of the hole, to be clamp_cr in from the end, + a 1/2 hole_r to account for hole
   // the e-e width is slot_l + 2 * clamp_cr
   // untranslated hole is in the middle
   // thus if slot_l = 12, ee = 20, offset from middle is -8
@@ -297,7 +298,7 @@ module clamp(h1 = 2) {
   difference() {
     translate([0,0,0])
     slot(h = h1, l = slot_l, r = clamp_cr);
-    translate([ -ee/2 + clamp_cr/2 + clamp_holer, 0, -h1 / 2 - 0.1 ]) cylinder(h1 + 0.2, clamp_holer, clamp_holer, $fn = 20);
+    translate([ -ee/2 + clamp_cr/2 + hole_r, 0, -h1 / 2 - 0.1 ]) cylinder(h1 + 0.2, hole_r, hole_r, $fn = 20);
   }
 }
 
@@ -506,8 +507,9 @@ if (parts == 0 || parts == 3) {
 
 if (parts == 0 || parts == 4) {
   color([ 1.0, 1.0, 1.0 ]) {
-    translate([60,0,0]) clamp();
-    translate([60,-15,0]) clamp();
+    // to suit PC case screws, total thread len 5mm and diam 2.89
+    translate([60,0,0]) clamp(5 - clampm_h, clamp_thread_diam/2);
+    translate([60,-15,0]) clamp(5 - clampm_h, clamp_thread_diam/2);
   }
 }
 
