@@ -441,6 +441,33 @@ module piframe() {
   }
 }
 
+module pipeclamp() {
+  id = pvcoutside;
+  ir = id / 2;
+  wt = 3;
+  ht = 12;
+  st = 14;
+  cw = 1;
+  join = 15;
+  bt = 5;
+
+  difference() {  
+    cylinder(12, ir + wt, ir + wt, $fn = 30);
+    translate([0, 0, -0.01]) cylinder(ht + 0.02, ir, ir, $fn = 30);
+    // slice out a bit so it is not touching...
+    translate([-cw/2,0,0])
+    translate([0, ir - 1, -0.01]) cube([cw, bt, st]);
+  }
+  difference() {
+    union() {
+      translate([cw/2,ir,0]) cube([wt,join+wt,ht]);
+      translate([-cw/2 - wt,ir,0]) cube([wt,join+wt,ht]);
+    }
+    translate([-wt-cw,ir + join/2+wt,ht/2])
+      rotate([90,0,90]) cylinder(cw*2 + 2 * wt, 2, 2);
+  }
+}
+
 //translate([xw_case / 2, 0, 0])
 //rotate([0,-90,-90])
 
@@ -485,4 +512,8 @@ if (parts == 0 || parts == 5) {
 
 if (parts == 0 || parts == 6) {
   color([ 0, 1.0, 0 ]) piframe();
+}
+
+if (parts == 0 || parts == 7) {
+  color([ 0, 0.7, 0 ]) translate([0,0,-70]) pipeclamp();
 }
