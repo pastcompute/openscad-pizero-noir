@@ -279,11 +279,11 @@ module sunvisor() {
       visor();
 
   // visor slots
-  translate([ 24, yh_case - visor_offset - slot_size, zd_case - 0.1 ])
+  translate([ 24, yh_case - visor_offset - slot_size - slot_slack, zd_case - 0.1 ])
       cube([ 8, slot_size, wall_thickness + 0.2 ]);
-  translate([ xw_case - 24 - 8, yh_case - visor_offset - slot_size, zd_case - 0.1 ])
+  translate([ xw_case - 24 - 8, yh_case - visor_offset - slot_size - slot_slack, zd_case - 0.1 ])
       cube([ 8, slot_size, wall_thickness + 0.2 ]);
-  translate([ xw_case / 2 - 4, yh_case - visor_offset - slot_size, zd_case - 0.1 ])
+  translate([ xw_case / 2 - 4, yh_case - visor_offset - slot_size - slot_slack, zd_case - 0.1 ])
       cube([ 8, slot_size, wall_thickness + 0.2 ]);
 }
 
