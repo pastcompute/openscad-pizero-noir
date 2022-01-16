@@ -482,8 +482,8 @@ module pipeclamp() {
 //orientpi();
 //piframe();
 
-//show_pi= 1;
-//parts = 6;
+show_pi= 1;
+//parts = 4;
 
 if (show_pi == 1) {
   // color([.7,.7,.7,0.79]) cam_at_position();
